@@ -2,8 +2,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <cmath>
 #include <iostream>
-#include <fstream> 
+#include <fstream>
 #include <sstream>
 
 //--------------------------------------------------------------
@@ -29,7 +30,7 @@ bool ofApp::loadLog(const std::string & filepath, const std::string & entity){
     while (getline( inputFile, line ))
     {
 
-        std::stringstream ss(line); 
+        std::stringstream ss(line);
         std::string strNum;
         unsigned int index = 0;
         unsigned int entityNum = 0;
@@ -46,8 +47,8 @@ bool ofApp::loadLog(const std::string & filepath, const std::string & entity){
 
                 // send data
                 int rawData[] = {g_time,entityNum,atoi(strNum.c_str())}; // (x,y,z)
-                std::vector<int> dataPoint (rawData, 
-                        rawData + sizeof(rawData) / sizeof(int) ); 
+                std::vector<int> dataPoint (rawData,
+                        rawData + sizeof(rawData) / sizeof(int) );
 
                 if( entity == "router")
                     router_send_table.push_back(dataPoint);
@@ -58,8 +59,8 @@ bool ofApp::loadLog(const std::string & filepath, const std::string & entity){
             } else {
                 // recv data
                 int rawData[] = {g_time,entityNum,atoi(strNum.c_str())}; // (x,y,z)
-                std::vector<int> dataPoint (rawData, 
-                        rawData + sizeof(rawData) / sizeof(int) ); 
+                std::vector<int> dataPoint (rawData,
+                        rawData + sizeof(rawData) / sizeof(int) );
 
                 if( entity == "router")
                     router_recv_table.push_back(dataPoint);
@@ -90,7 +91,7 @@ Router * ofApp::addGetRouterById(unsigned int i){
             return routers[i];
     }
 
-    // If we pass this point we need to add our new router 
+    // If we pass this point we need to add our new router
     Router * r = new Router(i);
 
     routers.push_back(r);
@@ -99,6 +100,17 @@ Router * ofApp::addGetRouterById(unsigned int i){
 }
 
 bool ofApp::createSampleData(){
+	for (int i = 1; i < 21; ++i) {
+		routers.push_back(new Router(i));
+	}
+	for (auto &r1: routers) {
+		for (auto &r2: routers) {
+			if (r2->id == r1->id)
+				continue;
+			wires.push_back(new Wire(r1, r2));
+		}
+	}
+	return true;
 
     Router * a = new Router(1);
     Router * b = new Router(2);
@@ -106,7 +118,7 @@ bool ofApp::createSampleData(){
     Router * d = new Router(4);
     Router * e = new Router(5);
     Router * f = new Router(6);
-    Router * g = new Router(7);
+    Router * g = new Router(8);
 
     routers.push_back(a);
     routers.push_back(b);
@@ -148,8 +160,8 @@ bool ofApp::loadTopology(const std::string & filepath){
         Router * cur_router;
 
         unsigned int index = 0;     // We will use to keep track of even / odds
-        std::stringstream ss(line); 
-        std::string str;        
+        std::stringstream ss(line);
+        std::string str;
         bool flush = false;
 
         while (getline (ss, str))
@@ -275,7 +287,20 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
+	ofBackgroundGradient(ofColor(76, 76, 76), ofColor(0, 0, 0));
+	int cx = 500, cy = 400, r = 350;
 
+	for (size_t i=0; i < routers.size(); ++i) {
+		double theta = i * 2 * M_PI / routers.size();
+		routers[i]->x = cx + r * cos(theta);
+		routers[i]->y = cy + r * sin(theta);
+	}
+
+	for (auto &w: wires) {
+		ofDrawSphere(w->a_ptr->x, w->a_ptr->y, 5);
+		ofDrawSphere(w->b_ptr->x, w->b_ptr->y, 5);
+		ofDrawLine(w->a_ptr->x, w->a_ptr->y, w->b_ptr->x, w->b_ptr->y);
+	}
 }
 
 //--------------------------------------------------------------
@@ -329,6 +354,6 @@ void ofApp::gotMessage(ofMessage msg){
 }
 
 //--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
+void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
