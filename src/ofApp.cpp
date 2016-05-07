@@ -282,9 +282,9 @@ void ofApp::setup(){
     // Load in the data in memory
     loadLog("../data/Min-UR-100/slimfly_router_sends_recvs_log.txt","router");
     loadLog("../data/Min-UR-100/slimfly_terminal_sends_recvs_log.txt" ,"terminal");
-    loadTopology("../data/MMS.19.9.bsconf");
+    // loadTopology("../data/MMS.19.9.bsconf");
     // loadTopology("../data/debug.bsconf");
-    // createSampleData();
+    createSampleData();
     printSystem();
 }
 
@@ -300,15 +300,15 @@ void ofApp::draw(){
 
 	for (size_t i=0; i < routers.size(); ++i) {
 		double theta = i * 2 * M_PI / routers.size();
-		routers[i]->x = cx + r * cos(theta);
-		routers[i]->y = cy + r * sin(theta);
+		routers[i]->pos.set(cx + r * cos(theta), cy + r * sin(theta));
 	}
 
 	for (auto &w: wires) {
-		ofDrawSphere(w->a_ptr->x, w->a_ptr->y, 5);
-		ofDrawSphere(w->b_ptr->x, w->b_ptr->y, 5);
-		ofDrawLine(w->a_ptr->x, w->a_ptr->y, w->b_ptr->x, w->b_ptr->y);
+		ofCircle(w->a_ptr->pos.x, w->a_ptr->pos.y, 5);
+		ofCircle(w->b_ptr->pos.x, w->b_ptr->pos.y, 5);
+		ofDrawLine(w->a_ptr->pos.x, w->a_ptr->pos.y, w->b_ptr->pos.x, w->b_ptr->pos.y);
 	}
+
 }
 
 //--------------------------------------------------------------

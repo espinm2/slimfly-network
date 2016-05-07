@@ -11,19 +11,15 @@ class Router {
 		Router(unsigned int i){
 			id = i;
 			occupancy = 0;
-			x = 0;
-			y = 0;
+			pos.set(0,0);
 		}
 
 		// Member var
 		unsigned int id;
 		unsigned int occupancy;
 		std::vector<Wire *> connections;
+		ofVec2f pos;
 
-
-
-		unsigned int x;
-		unsigned int y;
 
 
 };
