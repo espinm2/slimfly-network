@@ -85,10 +85,14 @@ bool ofApp::loadLog(const std::string & filepath, const std::string & entity){
 
 Router * ofApp::addGetRouterById(unsigned int i){
 
-    for(int i = 0; i < routers.size(); i++){
+   // printf("Looking for Router with Id %i\n", i);
 
-        if( routers[i]->id == i)
-            return routers[i];
+    for(int j = 0; j < routers.size(); j++){
+
+        if( routers[j]->id == i){
+            // printf("Found Router %i\n", i);
+            return routers[j];
+        }
     }
 
     // If we pass this point we need to add our new router
@@ -153,8 +157,10 @@ bool ofApp::loadTopology(const std::string & filepath){
     }
 
     std::string line;
-    while (getline( inputFile, line, ' '))
+    while (getline( inputFile, line))
     {
+
+        printf("Cur Line: %s\n", line.c_str());
 
         // Router we will be creating connections for
         Router * cur_router;
@@ -164,29 +170,30 @@ bool ofApp::loadTopology(const std::string & filepath){
         std::string str;
         bool flush = false;
 
-        while (getline (ss, str))
+        while (getline (ss, str, ' '))
         {
 
+            printf(" %10s:  ", str.c_str());
+
             if(flush){
+                printf(" Flushing...\n");
                 continue;
             }
 
             if( index == 0 ){
 
-                if( str == "node"){
-                    flush = true;
-                    continue;
-                }
-
-                printf("entity type: %s, ",str.c_str() );
+                printf(" Entity type: %s\n",str.c_str() );
 
             } else if (index == 1 ){
 
                 // Set our cur_router
-                printf("id %s,{ ", str.c_str() );
+                printf(" Entity id(get): %i ", atoi(str.c_str()));
                 cur_router = addGetRouterById(atoi(str.c_str()));
+                printf(" Entity id(got): %i\n", cur_router->id);
 
             } else if (index % 2 == 0) {
+
+                printf(" Connection type: %s\n",str.c_str() );
 
                 if( str == "node"){
                     flush = true;
@@ -196,7 +203,7 @@ bool ofApp::loadTopology(const std::string & filepath){
 
             }else{
 
-                printf("%s", str.c_str() );
+                printf("  Connection id: %i\n",atoi(str.c_str()) );
 
                 // Add connection
                 Router * adj_router = addGetRouterById(atoi(str.c_str()));
@@ -208,7 +215,6 @@ bool ofApp::loadTopology(const std::string & filepath){
             index++;
         }
 
-        printf("\n" );
     }
 
 
@@ -218,27 +224,28 @@ bool ofApp::loadTopology(const std::string & filepath){
 }
 
 //--------------------------------------------------------------
-Wire * ofApp::addGetWireByIds(unsigned int i, unsigned int j){
+Wire * ofApp::addGetWireByIds(unsigned int a, unsigned int b){
 
     // We are looking if this wire exist
     for(int i = 0; i < wires.size(); i++){
 
         Wire * w = wires[i];
 
-        if(w->a_ptr->id == i && w->b_ptr->id == j){
+        if(w->a_ptr->id == a && w->b_ptr->id == b){
             return w;
         }
 
-        if(w->b_ptr->id == i && w->a_ptr->id == j){
+        if(w->b_ptr->id == b && w->a_ptr->id == a){
             return w;
         }
 
     }
 
     // We have to add this wire
-    Wire * w = new Wire(addGetRouterById(i), addGetRouterById(j));
+    Wire * w = new Wire(addGetRouterById(a), addGetRouterById(b));
 
     return w;
+
 }
 
 
@@ -275,8 +282,9 @@ void ofApp::setup(){
     // Load in the data in memory
     loadLog("../data/Min-UR-100/slimfly_router_sends_recvs_log.txt","router");
     loadLog("../data/Min-UR-100/slimfly_terminal_sends_recvs_log.txt" ,"terminal");
-    // loadTopology("../data/MMS.19.9.bsconf");
-    createSampleData();
+    loadTopology("../data/MMS.19.9.bsconf");
+    // loadTopology("../data/debug.bsconf");
+    // createSampleData();
     printSystem();
 }
 
