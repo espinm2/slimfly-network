@@ -321,21 +321,30 @@ void ofApp::setup(){
     simulation_time = 0;
 
     // Load in the data in memory
-    loadLog("../data/Min-UR-100/slimfly_router_sends_recvs_log.txt","router");
-    loadLog("../data/Min-UR-100/slimfly_terminal_sends_recvs_log.txt" ,"terminal");
+    // loadLog("../data/Min-UR-100/slimfly_router_sends_recvs_log.txt","router");
+    // loadLog("../data/Min-UR-100/slimfly_terminal_sends_recvs_log.txt" ,"terminal");
     // loadTopology("../data/MMS.19.9.bsconf");
-    loadTopology("../data/debug.bsconf");
-    // createSampleData();
+    // loadTopology("../data/debug.bsconf");
+    createSampleData();
+	pause = false;
     printSystem();
+
+	cx = 500, cy = 400, r = 350;
+	for (size_t i=0; i < routers.size(); ++i) {
+		double theta = i * 2 * M_PI / routers.size();
+		routers[i]->x = cx + (r * cos(theta));
+		routers[i]->y = cy + (r * sin(theta));
+	}
+
 }
 
 
 void ofApp::applyForceToUpdatedPos(Router * r, ofVec2f & f){
 
     // Applying force to updated position
-    r->updatedPos.set( 
-        r->pos.x + (f.x * timestep) , 
-        r->pos.y + (f.y * timestep) 
+    r->updatedPos.set(
+        r->pos.x + (f.x * timestep) ,
+        r->pos.y + (f.y * timestep)
     );
 
 }
@@ -387,6 +396,17 @@ void ofApp::getRepulsiveForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & re
 
 //--------------------------------------------------------------
 void ofApp::update(){
+	if (pause) return;
+	double theta;
+	for (auto &rter: routers) {
+		if (cx - rter->x == 0)
+			theta = rter->y < cy ? M_PI / 2 : 3 * M_PI / 2;
+		else
+			theta = atan2(cy - rter->y, cx - rter->x);
+		rter->x = cx + (r * cos(theta + (2*M_PI / 100)));
+		rter->y = cy + (r * sin(theta + (2*M_PI / 100)));
+		// operator
+	}
 
     printf("Update loop: %i\n" , simulation_time);
 
@@ -442,9 +462,8 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-
+	if (pause) return;
 	ofBackgroundGradient(ofColor(76, 76, 76), ofColor(0, 0, 0));
-
 
 	for (auto &w: wires) {
         ofFill();
@@ -470,7 +489,16 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
-
+	// same key bindings to pause & seek as YouTube uses
+	switch (key) {
+		case 'j':
+			break;
+		case 'k':
+			pause = !pause;
+			break;
+		case 'l':
+			break;
+	}
 }
 
 //--------------------------------------------------------------

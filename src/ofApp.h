@@ -38,7 +38,7 @@ class ofApp : public ofBaseApp{
 		void getRepulsiveForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & res);
         void applyForceToUpdatedPos(Router * r, ofVec2f & f);
 		bool isConnectedto(Router * a, Router * b);
-		
+
 		vector<string> arguments;
 
         // Member Variables
@@ -54,5 +54,8 @@ class ofApp : public ofBaseApp{
         double repulsive_force;
         double spring_constant;
         double spring_rest_length;
-		
+
+		bool pause;
+		int cx,cy,r;
+
 };
