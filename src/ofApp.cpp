@@ -397,16 +397,6 @@ void ofApp::getRepulsiveForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & re
 //--------------------------------------------------------------
 void ofApp::update(){
 	if (pause) return;
-	double theta;
-	for (auto &rter: routers) {
-		if (cx - rter->x == 0)
-			theta = rter->y < cy ? M_PI / 2 : 3 * M_PI / 2;
-		else
-			theta = atan2(cy - rter->y, cx - rter->x);
-		rter->x = cx + (r * cos(theta + (2*M_PI / 100)));
-		rter->y = cy + (r * sin(theta + (2*M_PI / 100)));
-		// operator
-	}
 
     printf("Update loop: %i\n" , simulation_time);
 
