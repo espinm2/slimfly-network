@@ -34,8 +34,12 @@ class ofApp : public ofBaseApp{
         Router * addGetRouterById(unsigned int i);
         Wire * addGetWireByIds(unsigned int i, unsigned int j);
         void printSystem();
-
-
+        void getSpringForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & res);
+		void getRepulsiveForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & res);
+        void applyForceToUpdatedPos(Router * r, ofVec2f & f);
+		bool isConnectedto(Router * a, Router * b);
+		
+		vector<string> arguments;
 
         // Member Variables
         IntTable router_send_table;
@@ -44,5 +48,11 @@ class ofApp : public ofBaseApp{
         IntTable terminal_recv_table;
         std::vector<Router *>routers;
         std::vector<Wire *> wires;
+
+        double timestep;
+        unsigned int simulation_time;
+        double repulsive_force;
+        double spring_constant;
+        double spring_rest_length;
 		
 };
