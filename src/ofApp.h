@@ -27,33 +27,36 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 
-        // Our defined functions
-        bool loadLog(const std::string & filepath, const std::string & entity);
-        bool loadTopology(const std::string & filepath);
-        bool createSampleData();
-        Router * addGetRouterById(unsigned int i);
-        Wire * addGetWireByIds(unsigned int i, unsigned int j);
-        void printSystem();
-        void getSpringForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & res);
+                // Our defined functions
+                bool loadLog(const std::string & filepath, const std::string & entity);
+                bool loadTopology(const std::string & filepath);
+                bool createSampleData();
+                Router * addGetRouterById(unsigned int i);
+                Wire * addGetWireByIds(unsigned int i, unsigned int j);
+                void printSystem();
+                void getSpringForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & res);
 		void getRepulsiveForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & res);
-        void applyForceToUpdatedPos(Router * r, ofVec2f & f);
+                void applyForceToUpdatedPos(Router * r, ofVec2f & f);
 		bool isConnectedto(Router * a, Router * b);
 
-		vector<string> arguments;
 
-        // Member Variables
-        IntTable router_send_table;
-        IntTable router_recv_table;
-        IntTable terminal_send_table;
-        IntTable terminal_recv_table;
-        std::vector<Router *>routers;
-        std::vector<Wire *> wires;
+                // Member Variables
+                IntTable router_send_table;
+                IntTable router_recv_table;
+                IntTable terminal_send_table;
+                IntTable terminal_recv_table;
+                std::vector<Router *>routers;
+                std::vector<Wire *> wires;
+                
+                vector<string> arguments;
 
-        double timestep;
-        unsigned int simulation_time;
-        double repulsive_force;
-        double spring_constant;
-        double spring_rest_length;
+                double timestep;
+                unsigned int simulation_time;
+                double repulsive_force;
+                double c1;
+                double c2;
+                double c3;
+                double spring_rest_length;
 
 		bool pause;
 		int cx,cy,r;
