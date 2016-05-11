@@ -1,6 +1,6 @@
 #!/bin/bash
 
 cd bin
-./slimfly-network -timestep 0.5 -spring 2 300 4
+./slimfly-network -timestep 1  -pull 2 -push 1 -length 50 -size 768 768
 cd ..
 

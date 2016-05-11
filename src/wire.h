@@ -17,5 +17,6 @@ class Wire {
 		Router * a_ptr;
 		Router * b_ptr;
 		bool isActive;
+		bool selected;
 
 };

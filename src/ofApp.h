@@ -38,6 +38,10 @@ class ofApp : public ofBaseApp{
 		void getRepulsiveForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & res);
                 void applyForceToUpdatedPos(Router * r, ofVec2f & f);
 		bool isConnectedto(Router * a, Router * b);
+                void pinClusters();
+                void randomizeRouterPos();
+                bool clusterBuddies(Router * a, Router * b);
+
 
 
                 // Member Variables
@@ -47,8 +51,12 @@ class ofApp : public ofBaseApp{
                 IntTable terminal_recv_table;
                 std::vector<Router *>routers;
                 std::vector<Wire *> wires;
-                
+                Router * selected_router;
+                int cluster_size;
+
                 vector<string> arguments;
+                unsigned int screen_width;
+                unsigned int screen_height;
 
                 double timestep;
                 unsigned int simulation_time;
@@ -56,9 +64,7 @@ class ofApp : public ofBaseApp{
                 double c1;
                 double c2;
                 double c3;
-                double spring_rest_length;
 
 		bool pause;
-		int cx,cy,r;
 
 };

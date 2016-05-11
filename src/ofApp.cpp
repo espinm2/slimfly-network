@@ -6,6 +6,8 @@
 #include <fstream>
 #include <sstream>
 #include <math.h>  
+#include <cstdlib>
+
 
 
 //--------------------------------------------------------------
@@ -15,41 +17,61 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
 
-    // Give the boot if not used correctly
-    if (arguments.size() != 7){
+    // Give the boot if arguments are not used
+    if (arguments.size() != 12){
         printf("Improper Usage!\n");
-        printf("Usage Example: ./slimfly-network -timestep <timestep> -spring_constants <c1> <c2> <c3>\n");
+        printf("Usage Example: ./slimfly-network\n"); 
+        printf("\t-timestep <timestep>\n");      // 2
+        printf("\t-pull     <c1>\n");             // 4
+        printf("\t-push     <c3>\n");             // 6
+        printf("\t-lenth    <c2>\n");             // 8
+        printf("\t-size     <height> <width>\n"); // 10 11
         return;
     }
 
-    timestep = atof(arguments[2].c_str());
-    c1 = atof(arguments[4].c_str());
-    c2 = atof(arguments[5].c_str());
-    c3 = atof(arguments[6].c_str());
-    // spring_constant = atof(arguments[4].c_str());
-    spring_rest_length = 10;
+    // Setting member varibles
+    timestep      = atof(arguments[2].c_str());
+    c1            = atof(arguments[4].c_str());
+    c3            = atof(arguments[6].c_str());
+    c2            = atof(arguments[8].c_str());
+    screen_height = atoi(arguments[10].c_str());
+    screen_width  = atoi(arguments[11].c_str());
+
+    printf("timestep: %f\n", timestep );
+    printf("pull:     %f\n", c1);
+    printf("push:     %f\n", c3);
+    printf("length:   %f\n", c2);
+    printf("height:   %i\n", screen_height);
+    printf("width:    %i\n", screen_width);
+
     simulation_time = 0;
+    pause           = true;
 
     // Load in the data in memory
     // loadLog("../data/Min-UR-100/slimfly_router_sends_recvs_log.txt","router");
     // loadLog("../data/Min-UR-100/slimfly_terminal_sends_recvs_log.txt" ,"terminal");
-    loadTopology("../data/MMS.19.9.bsconf");
     // loadTopology("../data/debug.bsconf");
     // createSampleData();
-    pause = false;
-    printSystem();
+    // printSystem();
 
-    cx = 500, cy = 400, r = 350;
-    for (size_t i=0; i < routers.size(); ++i) {
-        double theta = i * 2 * M_PI / routers.size();
-        routers[i]->pos.x = cx + (r * cos(theta));
-        routers[i]->pos.y = cy + (r * sin(theta));
-    }
+    // This setups our routers, wires, and cluster_size memeber var
+    loadTopology("../data/MMS.19.9.bsconf");
+    pinClusters();
+    randomizeRouterPos();
+
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	if (pause) return;
+
+    if( ofGetWindowWidth() !=  screen_width || ofGetWindowHeight() != screen_height ){
+        screen_width =  ofGetWindowWidth();
+        screen_height = ofGetWindowHeight();
+        pinClusters();
+        return; //don't update this loop
+    }
+
+    if (pause) return;
 
     printf("Update loop: %i\n" , simulation_time);
 
@@ -57,6 +79,13 @@ void ofApp::update(){
     for(unsigned int i = 0; i < routers.size(); i++){
 
         Router * router_a = routers[i];
+
+        // Do not move routers that are pinned
+        if( router_a->pinned ){
+            router_a->updatedPos = router_a->pos;
+            continue;
+        }
+
         // printf("Router %3i|%4f %4f|%4f %4f|\n",
         // router_a->id,
         // router_a->pos.x,
@@ -77,7 +106,7 @@ void ofApp::update(){
                 continue;
 
             // Do I share a link with this router?
-            if(isConnectedto(router_a,router_b)){
+            if(clusterBuddies(router_a,router_b)){
                 getSpringForce(router_a->pos, router_b->pos, force);
                 // getRepulsiveForce(router_a->pos, router_b->pos, force);
                 // printf("\tRouter %i applies spring    <%4f,%4f>\n", router_b->id, force.x, force.y);
@@ -105,24 +134,69 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	if (pause) return;
 	ofBackgroundGradient(ofColor(76, 76, 76), ofColor(0, 0, 0));
 
-	for (auto &w: wires) {
-        ofFill();
-        double displacement = spring_rest_length - w->a_ptr->pos.distance(w->b_ptr->pos);
-        if( displacement > 0 ){
-            ofSetColor(0,0,255); // blue (repulsive)
-        }else{
-            ofSetColor(0,255,0); // green (attractive)
-        }
-		ofDrawLine(w->a_ptr->pos.x, w->a_ptr->pos.y, w->b_ptr->pos.x, w->b_ptr->pos.y);
-	}
 
-    ofSetColor(1,1,1); // blue (repulsive)
+
+    // Drawing background wires
+	// for (auto &w: wires) {
+ //        if(!clusterBuddies(w->a_ptr, w->b_ptr)){
+ //            ofSetColor(50,50,50); // almost black
+ //            ofDrawLine(w->a_ptr->pos.x, w->a_ptr->pos.y, w->b_ptr->pos.x, w->b_ptr->pos.y);
+ //        }
+	// }
+
+    // Drawing cluser wires
+    for (auto &w: wires) {
+        if(clusterBuddies(w->a_ptr, w->b_ptr)){
+            ofSetColor(152,78,163); // purple
+            ofDrawLine(w->a_ptr->pos.x, w->a_ptr->pos.y, w->b_ptr->pos.x, w->b_ptr->pos.y);
+        }
+    }
+
+    // Drawing Routers
     for(unsigned int i = 0; i < routers.size(); i++){
+        ofSetColor(255,0,0); // red
         ofDrawCircle(routers[i]->pos.x, routers[i]->pos.y, 5);
     }
+
+    // Drwaing routers labels
+    ofSetColor(255,255,255); // white
+    for(unsigned int i = 0; i < routers.size(); i++){
+        if(routers[i] != selected_router)
+            routers[i]->drawLabel();
+    }
+
+    if(selected_router){
+        ofSetColor(0,255,0); // green
+        ofDrawCircle(selected_router->pos.x, selected_router->pos.y, 8);
+
+
+        ofSetColor(255,255,0); // light blue
+        selected_router->drawSelectedLabel();
+
+        for(unsigned int i = 0; i < selected_router->connections.size();i++){
+            Wire * w  = selected_router->connections[i];
+
+            ofSetColor(0,255,0); // green
+            ofDrawLine(w->a_ptr->pos.x, w->a_ptr->pos.y, w->b_ptr->pos.x, w->b_ptr->pos.y);
+
+            if(w->a_ptr == selected_router){
+                ofDrawCircle(w->b_ptr->pos.x, w->b_ptr->pos.y, 5);
+                ofSetColor(255,255,0); // light blue
+                w->b_ptr->drawLabel();
+            }else{
+                ofDrawCircle(w->a_ptr->pos.x, w->a_ptr->pos.y, 5);
+                ofSetColor(255,255,0); // light blue
+                w->a_ptr->drawLabel();
+            }
+
+        }
+
+    }
+
+
+
 }
 
 //--------------------------------------------------------------
@@ -146,6 +220,8 @@ void ofApp::keyReleased(int key){
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
+
+
 }
 
 //--------------------------------------------------------------
@@ -154,6 +230,22 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
+
+    ofVec2f cursor(x,y);
+    selected_router = NULL;
+    double selected_distance = screen_width*screen_height; // large number
+    int threshold = 10;                                    // How close you have to click to register selected
+
+    for(unsigned int i = 0; i < routers.size(); i++){
+
+
+        double dist = cursor.distance(routers[i]->pos);
+        if (dist < threshold && dist < selected_distance ){
+            selected_distance = dist;
+            selected_router = routers[i];
+        }
+
+    }
 }
 
 //--------------------------------------------------------------
@@ -332,16 +424,100 @@ bool ofApp::loadTopology(const std::string & filepath){
 
 
 
-    int cx = 500, cy = 400, r = 350;
-
-    for (size_t i=0; i < routers.size(); ++i) {
-        double theta = i * 2 * M_PI / routers.size();
-        routers[i]->pos.set(cx + r * cos(theta), cy + r * sin(theta));
-    }
+    // cluster size
+    cluster_size=(int)sqrt(routers.size() / 2.0);
 
     printf("Done loadTopology\n");
 
     return true;
+}
+
+
+void ofApp::pinClusters(){
+
+    printf("Pinning Clusters Start\n");
+
+    int nr = routers.size();
+    int q = (int)sqrt(nr/2.0);
+    int N = q * 2;
+
+    std::vector<Router *> pinned;
+    for (unsigned int i = 0; i < N; i++)
+        pinned.push_back(NULL);
+
+
+    for (unsigned int i = 0; i < routers.size(); i++)
+    {
+        if(routers[i]->id % q == 0){
+            routers[i]->pinned = true;
+            pinned[routers[i]->id / q] = routers[i];
+        }
+    }
+
+    int vpad = 100;
+    int hpad = 100;
+    double max_offset = 400;
+    double max_width  = 1920;
+
+    int h_space = screen_width-2*hpad;
+    double inrc = h_space/(pinned.size()/2.0);
+
+    // Top row
+    for(unsigned i = 0; i < pinned.size()/2; i++){
+        int y = vpad;
+
+        if(i%2==0)
+            y+= (-1 * max_offset / max_width) * (screen_width - max_width);
+            
+        int x = hpad + i * inrc ;
+        pinned[i]->pos.set(x,y);
+    }
+
+    // Bottom row
+    for(unsigned i = pinned.size()/2; i < pinned.size(); i++){
+        int y = screen_height - vpad;
+
+        if(i%2==0)
+            y -= (-1 * max_offset / max_width) * (screen_width-max_width);
+
+        int x = hpad + (i-pinned.size()/2) * inrc; 
+        pinned[i]->pos.set(x,y);
+    }
+
+    // Bug in formatting of topolgy file (bsconf)
+    ofVec2f tmp = pinned[0]->pos;
+    // pinned[0]->pos = pinned[pinned.size()-1]->pos;
+    // pinned[pinned.size()-1]->pos = tmp;
+
+
+    // // Pin the anchors into a circle
+    // int cx = 500, cy = 400, r = 350;
+
+    // for (size_t i=0; i < pinned.size(); ++i) {
+    //     double theta = i * 2 * M_PI / pinned.size();
+    //     pinned[i]->pos.set(cx + r * cos(theta), cy + r * sin(theta));
+    // }
+
+
+    printf("Pinning Clusters End\n");
+
+}
+
+void ofApp::randomizeRouterPos(){
+
+    printf("Randomizing Start\n");
+
+    int p = 200; // padding
+    for(unsigned int i = 0; i < routers.size(); i++){
+        if(!routers[i]->pinned){
+            int x = p+rand()%(screen_height-2*p);
+            int y = p+rand()%(screen_width-2*p);
+            printf("Router %i set to (%i,%i)\n",routers[i]->id, x,y );
+            routers[i]->pos.set(x,y);
+        }
+    }
+
+    printf("Randomizing End\n");
 }
 
 //--------------------------------------------------------------
@@ -415,32 +591,45 @@ bool ofApp::isConnectedto(Router * a, Router * b){
     return false;
 }
 
+
+bool ofApp::clusterBuddies(Router * a, Router * b){
+
+    int c_a = (int) a->id / cluster_size;
+    int c_b = (int) b->id / cluster_size;
+
+    return c_a == c_b;
+
+}
+    
 //--------------------------------------------------------------
 // Debug Methods
 //--------------------------------------------------------------
 void ofApp::printSystem(){
 
-    // printf("Routers Size: %i\n",routers.size() );
-    // printf("Wires Size: %i\n",wires.size() );
-    for(int i=0; i < routers.size(); i++){
+    printf("Routers Size: %i\n",routers.size() );
+    printf("Wires Size: %i\n",wires.size() );
+
+    printf("Printing adj_list\n");
+
+    for(unsigned int i=0; i < routers.size(); i++){
 
         Router * cur_router = routers[i];
 
-        // printf("Router(%i) ", cur_router->id);
+        printf("Router(%i) \n", cur_router->id);
 
-        for(int j=0; j< cur_router->connections.size(); j++){
+        // for(int j=0; j< cur_router->connections.size(); j++){
 
-            Wire * w = cur_router->connections[j];
-            unsigned int other_router;
+        //     Wire * w = cur_router->connections[j];
+        //     unsigned int other_router;
 
-            if ( w->a_ptr == cur_router)
-                other_router = w->b_ptr->id;
-            else
-                other_router = w->a_ptr->id;
+        //     if ( w->a_ptr == cur_router)
+        //         other_router = w->b_ptr->id;
+        //     else
+        //         other_router = w->a_ptr->id;
 
-            // printf("%i ", other_router);
+        //     // printf("%i ", other_router);
 
-        }
+        // }
         // printf("\n");
     }
 }
@@ -498,7 +687,7 @@ void ofApp::getSpringForce(const ofVec2f & a, const ofVec2f & b, ofVec2f & res){
 
     // Step 1: Get the distance between two vectors
     double dist = a.distance(b);
-    // double displacement = spring_rest_length - dist;
+    // double displacement = c2 - dist;
 
     // Step 2: Calculate absolute repulsive force
    double force = -1*c1*log(dist/c2);

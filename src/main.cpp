@@ -1,6 +1,7 @@
 #include "ofApp.h"
 #include "ofAppGlutWindow.h"
 #include <string>
+#include <stdlib.h>
 
 
 //========================================================================
@@ -13,8 +14,14 @@ int main(int argc, char *argv[]){
 	// ofRunApp(new ofApp());
 
 	ofAppGlutWindow window; // create a window
+
 	// set width, height, mode (OF_WINDOW or OF_FULLSCREEN)
-	ofSetupOpenGL(&window, 1024, 768, OF_WINDOW);
+	ofSetupOpenGL(
+		&window, 
+		atoi(argv[10]), 
+		atoi(argv[11]), 
+		OF_WINDOW
+	);
 
     ofApp *app = new ofApp();
 
